@@ -69,6 +69,8 @@ module top (
 
 	reg [2:0] ledrgb_nxt;
 
+	reg [10:0] ledc_nxt;
+
 	reg [7:0] value; // single-color (of RGB) "PWM" value
 
 	// general counters
@@ -117,6 +119,7 @@ module top (
 		end
 		*/
 
+		/* @DEBUG working(???)-ish
 		// cycle color
 		if (color_index == 2) begin
 			color_index_nxt <= 0;
@@ -132,10 +135,19 @@ module top (
 			clkdiv_nxt <= clkdiv + 1;
 			// clkdiv_pulse <= 0;
 		end
+		*/
+
+		// Clock divider pulse generator
+		if (clkdiv == 0) begin // @DEBUG was 2000000 (for cycle code)
+			clkdiv_nxt <= 767; // 3 * 256 - 1
+		end else begin
+			clkdiv_nxt <= clkdiv - 1;
+		end
 
 		// set cycle of color "sinks"
-		// @TODO was color_index below
-		case (cntr[24:23])
+		// @TODO below original was color_index
+		// @DEBUG below was cntr[24:23]
+		case (clkdiv[9:8])
 			0: begin
 					ledrgb_nxt[0] <= 1;
 					ledrgb_nxt[1] <= 0;
@@ -158,6 +170,19 @@ module top (
 				end
 			endcase
 
+		for (l = 0; l < (led_mapping_size + 1); l = l + 1) begin
+			// @TODO do color mapping
+			value = leds[l][color_index]; // @NOTE was <= which was wrong!
+
+			// ledc[i] <= 1; // @DEBUG it does something!
+			if (clkdiv <= value) begin
+				ledc_nxt[l] <= 1;
+			end else begin
+				ledc_nxt[l] <= 0;
+			end
+
+		end // for
+
 	end
 
 	// Synchronous logic
@@ -177,22 +202,14 @@ module top (
 			ledrgb[s] <= ledrgb_nxt[s];
 		end
 
-		// or (ii=0; ii<6; ii=ii+1)
+
 		for (l = 0; l < (led_mapping_size + 1); l = l + 1) begin
-			// @TODO do color mapping
-			value = leds[l][color_index]; // @NOTE was <= which was wrong!
+			ledc[l] <= ledc_nxt[l];
+		end
 
-			// ledc[i] <= 1; // @DEBUG it does something!
-			if (clkdiv_nxt <= value) begin
-				ledc[l] <= 1;
-			end else begin
-				ledc[l] <= 0;
-			end
-
-		end // for
 
 		if (!rst_) begin
-			clkdiv <= 0;
+			clkdiv <= 767; // 3 * 256 - 1, will be count down! was 0
 			color_index <= 0;
 		end
 
