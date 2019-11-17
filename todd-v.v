@@ -12,6 +12,14 @@ module top (
 	output reg [29:0] genio_oe,
 	*/
 );
+
+	// PCB D11 is schem LED10 which is pin K20 which is lpf "ledc[6]" SITE "K20"
+	// PCB D12 is schem LED11 which is pin K19 which is lpft "ledc[7]" SITE "K19"    **** (ALSO "VIO" via 1K resistor)
+	// PCB D13 is schem LED7 which is pin B20 which is lpf "ledc[8]" SITE "B20";
+	// PCB D14 is schem LED8 which is pin B19 which is lpf "ledc[9]" SITE "B19";
+	// PCB D15 is schem LED9 which is pin A18 which is lpf *** missing *** try "leda[3]"
+
+
 	// Invert all buttons to make things easier
 	wire [7:0] btn = ~nbtn;
 
@@ -19,9 +27,11 @@ module top (
 
 	assign genio = gpio;
 
-	reg [7:0] io_counter = 0;
+	reg [7:0] top_led_counter = 0;
+	parameter max_top_led_counter = 5;
 
-	parameter max_io_counter = 5;
+	reg [7:0] side_led_counter = 0;
+	parameter max_side_led_counter = 4;
 
 	// Clock divider and pulse registers
 	reg [20:0] clkdiv = 0;
@@ -39,98 +49,58 @@ module top (
 			clkdiv_pulse <= 0;
 		end
 
-		// Timer counter
+		// cycle through top LED's
 		if (clkdiv_pulse) begin
-			io_counter <= io_counter + 1;
+			top_led_counter <= top_led_counter + 1;
 
-			// display_value <= display_value_inc;
 			if (io_counter > 0) begin
-				ledc[io_counter - 1] <= 0;
+				ledc[top_led_counter - 1] <= 0;
 			end else begin
-				ledc[max_io_counter] <= 0;
+				ledc[max_top_led_counter] <= 0;
 			end
 
-			if (io_counter > max_io_counter) begin
-				io_counter <= 0;
+			if (top_led_counter > max_top_led_counter) begin
+				top_led_counter <= 0;
 			end
 
-			ledc[io_counter] <= 1;
-		end
+			ledc[top_led_counter] <= 1;
+		end // if (clkdiv_pulse)
 
-	end
+		// cycle through top LED's
+		if (clkdiv_pulse) begin
+			case (side_led_counter)
+				0: begin
+						leda[3] <= 0;
+						ledc[6] <= 1;
+					end
+				1: begin
+						ledc[6] <= 0;
+						ledc[7] <= 1;
+					end
+				2: begin
+						ledc[7] <= 0;
+						ledc[8] <= 1;
+					end
+				3: begin
+						ledc[8] <= 0;
+						ledc[9] <= 1;
+					end
+				4: begin
+						ledc[9] <= 0;
+						leda[3] <= 1;
+					end
+			endcase
 
+			side_led_counter <= side_led_counter + 1;
 
-	/*
-	always begin
-		gpio[20] <= 1; // "genio[20]" SITE "D11"
-		gpio[21] <= 1; // "genio[21]" SITE "C11"
-		gpio[22] <= 1; // "genio[22]" SITE "B11"
-		gpio[23] <= 1; // "genio[23]" SITE "A11"
-	end
-	*/
+			if (side_led_counter > max_side_led_counter) begin
+				side_led_counter <= 0;
+			end
 
+		end // if (clkdiv_pulse)
 
+	end // always @(posedge clk)
 
-	/*
-	wire [29:0] gpio;
-	assign genio = gpio;
-
-	always @(*) begin
-		gpio[20] = 1; // "genio[20]" SITE "D11"
-		gpio[21] = 1; // "genio[21]" SITE "C11"
-		gpio[22] = 1; // "genio[22]" SITE "B11"
-		gpio[23] = 1; // "genio[23]" SITE "A11"
-	end
-	*/
-
-	/*
-	// enable output
-	assign genio_oe[20] = 1; // "genio[20]" SITE "D11"
-	assign genio_oe[21] = 1; // "genio[21]" SITE "C11"
-	assign genio_oe[22] = 1;	// "genio[22]" SITE "B11"
-	assign genio_oe[23] = 1;	// "genio[23]" SITE "A11"
-
-	// set output
-	assign genio_out[20] = 0; // "genio[20]" SITE "D11"
-	assign genio_out[21] = 0; // "genio[21]" SITE "C11"
-	assign genio_out[22] = 0;	// "genio[22]" SITE "B11"
-	assign genio_out[23] = 0;	// "genio[23]" SITE "A11"
-	// @TODO 5th LED?
-	*/
-
-	/*
-	assign genio[20] = 1; // "genio[20]" SITE "D11"
-	assign genio[21] = 1; // "genio[21]" SITE "C11"
-	assign genio[22] = 1;	// "genio[22]" SITE "B11"
-	assign genio[23] = 1;	// "genio[23]" SITE "A11"
-	*/
-
-
-
-	/*
-
-	// Display value register and increment bus
-	reg [7:0] display_value = 0;
-	wire [7:0] display_value_inc;
-
-	// Lap registers
-	reg [7:0] lap_value = 0;
-	reg [4:0] lap_timeout = 0;
-
-	// Clock divider and pulse registers
-	reg [20:0] clkdiv = 0;
-	reg clkdiv_pulse = 0;
-	reg running = 0;
-
-	// Combinatorial logic
-	assign ledc[0] = !nbtn[0];									// Not operator example
-	assign ledc[1] = btn[1] || btn[2];							// Or operator example
-	assign ledc[2] = btn[2] ^ btn[3];							// Xor Operator example
-	assign ledc[3] = btn[3] && !nbtn[0];						// And operator example
-	assign ledc[4] = (btn[1] + btn[2] + btn[3] + 2'b00) >> 1;	// Addition and shift example
-
-
-	*/
 
 
 endmodule
