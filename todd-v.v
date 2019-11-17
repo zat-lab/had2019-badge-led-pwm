@@ -50,23 +50,34 @@ module top (
 		end
 
 		// cycle through top LED's
-		if (clkdiv_pulse) begin
-			top_led_counter <= top_led_counter + 1;
 
-			if (io_counter > 0) begin
+		if (clkdiv_pulse) begin
+			if (top_led_counter > 0) begin
 				ledc[top_led_counter - 1] <= 0;
+				ledc[top_led_counter] <= 1;
 			end else begin
 				ledc[max_top_led_counter] <= 0;
+				ledc[top_led_counter] <= 1;
 			end
 
-			if (top_led_counter > max_top_led_counter) begin
+			if (top_led_counter == max_top_led_counter) begin
 				top_led_counter <= 0;
+			end else begin
+				top_led_counter <= top_led_counter + 1;
 			end
-
-			ledc[top_led_counter] <= 1;
+			/*
+			if (top_led_counter == max_top_led_counter) begin
+				ledc[top_led_counter - 1] <= 0;
+			*/
 		end // if (clkdiv_pulse)
 
+
+
+		// ledc[9] <= 1; // @DEBUG
+		// ledc[8] <= 1; // @DEBUG
+
 		// cycle through top LED's
+		/*
 		if (clkdiv_pulse) begin
 			case (side_led_counter)
 				0: begin
@@ -98,6 +109,7 @@ module top (
 			end
 
 		end // if (clkdiv_pulse)
+		*/
 
 	end // always @(posedge clk)
 
